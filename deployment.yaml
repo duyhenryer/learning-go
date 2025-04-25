@@ -1,0 +1,107 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-rest-api
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: go-rest-api
+  template:
+    metadata:
+      labels:
+        app: go-rest-api
+    spec:
+      containers:
+        - name: go-rest-api
+          image: 879891341695.dkr.ecr.ap-southeast-1.amazonaws.com/rest-api:latest
+          ports:
+            - containerPort: 8001
+          env:
+            - name: POSTGRES_DB
+              value: go_app_dev
+            - name: POSTGRES_USER
+              value: docker
+            - name: POSTGRES_PASSWORD
+              value: password
+            - name: POSTGRES_HOST
+              value: localhost
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: JWT_SECRET_KEY
+              value: ObL89O3nOSSEj6tbdHako0cXtPErzBUfq8l8o/3KD9g=INSECURE
+            - name: API_SECRET_KEY
+              value: cJGZ8L1sDcPezjOy1zacPJZxzZxrPObm2Ggs1U0V+fE=INSECURE
+            - name: REDIS_HOST
+              value: localhost
+            - name: MONGO_HOST
+              value: localhost
+        - name: postgres
+          image: postgres:15-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: go_app_dev
+            - name: POSTGRES_USER
+              value: docker
+            - name: POSTGRES_PASSWORD
+              value: password
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+
+        - name: redis
+          image: redis:alpine
+          ports:
+            - containerPort: 6379
+
+        - name: mongo
+          image: mongo
+          ports:
+            - containerPort: 27017
+          volumeMounts:
+            - name: mongo-storage
+              mountPath: /data/db
+      volumes:
+        - name: mongo-storage
+          emptyDir: {}
+        - name: postgres-storage
+          emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-rest-api-service
+  namespace: default
+  labels:
+    app: go-rest-api
+    metrics: enabled 
+spec:
+  selector:
+    app: go-rest-api
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8001
+      targetPort: 8001
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: go-apps-monitor
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      metrics: enabled
+  namespaceSelector:
+    matchNames:
+      - default
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s

@@ -1,0 +1,83 @@
+services:
+  backend:
+    container_name: go-rest-api-template
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 8001:8001
+    depends_on:
+      - db
+      - mongo
+    environment:
+      POSTGRES_DB: go_app_dev
+      POSTGRES_HOST: dockerPostgres
+      POSTGRES_USER: docker
+      POSTGRES_PASSWORD: password
+      POSTGRES_PORT: 5435
+      JWT_SECRET_KEY: ObL89O3nOSSEj6tbdHako0cXtPErzBUfq8l8o/3KD9g=INSECURE
+      API_SECRET_KEY: cJGZ8L1sDcPezjOy1zacPJZxzZxrPObm2Ggs1U0V+fE=INSECURE
+      REDIS_HOST: redis
+      MONGO_HOST: mongo
+
+  db:
+    image: postgres:14.1-alpine
+    restart: always
+    container_name: dockerPostgres
+    volumes:
+      # - .dbdata:/var/lib/postgres
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5435:5435"
+    environment:
+      - POSTGRES_DB=go_app_dev
+      - POSTGRES_USER=docker
+      - POSTGRES_PASSWORD=password
+    command: -p 5435
+
+  redis:
+    image: "redis:alpine"
+    ports:
+      - "6380:6379"
+    container_name: dockerRedis
+
+  mongo:
+    image: mongo
+    container_name: dockerMongo
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "27017:27017"
+    restart: always
+
+  victoriametrics:
+    container_name: victoriametrics
+    image: victoriametrics/victoria-metrics:v1.115.0
+    ports:
+      - "8428:8428"
+    volumes:
+      - vm_data:/storage
+      - ./victoriametrics.yml:/etc/victoriametrics.yml
+    command:
+      - "--storageDataPath=/storage"
+      - "--httpListenAddr=:8428"
+      - "--selfScrapeInterval=10s"
+      - "--promscrape.config=/etc/victoriametrics.yml" # Thêm file config
+    restart: always
+
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:11.5.0
+    depends_on:
+      - victoriametrics
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning # Thư mục provisioning
+    restart: always
+volumes:
+  postgres_data:
+  mongo_data: # Declare the volume for MongoDB data
+  vm_data: # Volume cho VictoriaMetrics
+  grafana_data: # Volume cho Grafana
