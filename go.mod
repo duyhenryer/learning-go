@@ -1,8 +1,6 @@
 module github.com/duyhenryer/go-rest-api
 
-go 1.23.0
-
-toolchain go1.23.5
+go 1.24.0
 
 require (
 	github.com/araujo88/gin-gonic-xss-middleware v0.0.0-20221014023455-d89f16de6a7e
@@ -20,7 +18,7 @@ require (
 	go.mongodb.org/mongo-driver v1.17.3
 	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.37.0
-	golang.org/x/time v0.10.0
+	golang.org/x/time v0.13.0
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.31.0
 )
